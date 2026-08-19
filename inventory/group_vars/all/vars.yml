@@ -1,0 +1,8 @@
+---
+ansible_user: root
+ansible_password: "{{ vault_root_ssh_password }}"
+# No ansible_become var here: the default (off, per ansible.cfg) already
+# applies everywhere except the postgres role's roles_db.yml tasks, which
+# opt into become: true explicitly. Setting ansible_become: false here
+# would override that task-level opt-in (inventory-set ansible_become can
+# take precedence over a task's `become:` keyword).

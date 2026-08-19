@@ -1,0 +1,11 @@
+---
+# Copy this file's contents into an actual vault file and encrypt it:
+#   ansible-vault create inventory/group_vars/all/vault.yml
+# (paste these keys in with real values, or run
+#   ansible-vault encrypt inventory/group_vars/all/vault.yml
+#  after writing it out in plaintext first.)
+#
+# Do not commit an unencrypted vault.yml.
+
+vault_root_ssh_password: "CHANGE_ME"
+vault_postgres_api_password: "CHANGE_ME"

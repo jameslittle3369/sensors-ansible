@@ -1,0 +1,3 @@
+---
+# Placeholder for rpi4-api group vars (nginx + FastAPI + uv-managed Python).
+# Not yet in use -- rpi4-api is not provisioned yet.

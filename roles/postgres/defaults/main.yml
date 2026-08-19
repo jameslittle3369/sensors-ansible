@@ -1,0 +1,16 @@
+---
+postgres_major_version: 18
+postgres_packages:
+  - "postgresql-{{ postgres_major_version }}"
+  - "postgresql-contrib-{{ postgres_major_version }}"
+  - python3-psycopg2
+
+postgres_pgdg_key_url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+postgres_pgdg_key_path: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+postgres_pgdg_apt_architecture: arm64
+
+postgres_private_cidr: "10.0.0.0/24"
+postgres_private_ip_prefix_regex: '^10\.0\.0\.'
+
+postgres_api_role_name: api
+postgres_api_db_name: api

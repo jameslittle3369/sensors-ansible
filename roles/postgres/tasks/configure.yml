@@ -1,0 +1,29 @@
+---
+- name: Determine host's private-network (10.0.0.0/24) IPv4 address
+  ansible.builtin.set_fact:
+    postgres_private_ip: "{{ ansible_all_ipv4_addresses | select('match', postgres_private_ip_prefix_regex) | first }}"
+
+- name: Deploy listen_addresses drop-in
+  ansible.builtin.template:
+    src: listen.conf.j2
+    dest: "/etc/postgresql/{{ postgres_major_version }}/main/conf.d/listen.conf"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  notify: restart postgresql
+
+- name: Deploy pg_hba.conf
+  ansible.builtin.template:
+    src: pg_hba.conf.j2
+    dest: "/etc/postgresql/{{ postgres_major_version }}/main/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: '0640'
+    backup: true
+  notify: reload postgresql
+
+- name: Ensure PostgreSQL is enabled and running
+  ansible.builtin.systemd:
+    name: postgresql
+    enabled: true
+    state: started

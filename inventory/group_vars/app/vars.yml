@@ -1,0 +1,3 @@
+---
+# Placeholder for rpi4-app group vars (Grafana + uv-managed Python + standalone
+# systemd services/timers). Not yet in use -- rpi4-app is not provisioned yet.

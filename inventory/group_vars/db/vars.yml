@@ -1,0 +1,3 @@
+---
+postgres_major_version: 18
+postgres_api_role_password: "{{ vault_postgres_api_password }}"

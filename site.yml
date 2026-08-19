@@ -1,0 +1,24 @@
+---
+- name: Apply common baseline to all managed hosts
+  hosts: all
+  gather_facts: true
+  roles:
+    - common
+
+- name: Configure PostgreSQL on rpi4-db
+  hosts: db
+  gather_facts: true
+  roles:
+    - postgres
+
+- name: Configure rpi4-api (placeholder)
+  hosts: api
+  gather_facts: true
+  roles:
+    - api
+
+- name: Configure rpi4-app (placeholder)
+  hosts: app
+  gather_facts: true
+  roles:
+    - app

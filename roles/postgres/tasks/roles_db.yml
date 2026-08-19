@@ -1,0 +1,38 @@
+---
+# NOTE: These three tasks are the one deliberate exception to "no become/sudo".
+# community.postgresql.* modules must connect as the OS `postgres` user to use
+# peer auth over the local unix socket (no postgres superuser password needed).
+# Since we SSH in as root, and root can `su` to any user without a password,
+# we use become_method=su (never sudo) scoped to just these tasks.
+
+- name: Ensure api PostgreSQL role exists
+  community.postgresql.postgresql_user:
+    name: "{{ postgres_api_role_name }}"
+    password: "{{ postgres_api_role_password }}"
+    role_attr_flags: SUPERUSER,LOGIN
+    encrypted: true
+    state: present
+  become: true
+  become_method: su
+  become_user: postgres
+  become_flags: '-s /bin/sh'
+
+- name: Ensure api database exists (idempotent -- does not touch existing data)
+  community.postgresql.postgresql_db:
+    name: "{{ postgres_api_db_name }}"
+    owner: "{{ postgres_api_role_name }}"
+    state: present
+  become: true
+  become_method: su
+  become_user: postgres
+  become_flags: '-s /bin/sh'
+
+- name: Ensure citext extension exists in api database
+  community.postgresql.postgresql_ext:
+    db: "{{ postgres_api_db_name }}"
+    name: citext
+    state: present
+  become: true
+  become_method: su
+  become_user: postgres
+  become_flags: '-s /bin/sh'
