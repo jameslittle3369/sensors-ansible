@@ -1,0 +1,57 @@
+---
+- name: Install rtl_433 build dependencies
+  ansible.builtin.apt:
+    name:
+      - libtool
+      - libusb-1.0-0-dev
+      - librtlsdr-dev
+      - rtl-sdr
+      - build-essential
+      - cmake
+      - pkg-config
+      - git
+    state: present
+    update_cache: true
+
+- name: Clone/update rtl_433 source
+  ansible.builtin.git:
+    repo: "{{ rtl433_repo }}"
+    dest: /usr/local/src/rtl_433
+    version: master
+  register: rtl433_checkout
+
+- name: Check whether the rtl_433 binary is already installed
+  ansible.builtin.stat:
+    path: "{{ rtl433_install_prefix }}/bin/rtl_433"
+  register: rtl433_binary
+
+- name: Configure rtl_433 build
+  ansible.builtin.command: "cmake -B build -DCMAKE_INSTALL_PREFIX={{ rtl433_install_prefix }}"
+  args:
+    chdir: /usr/local/src/rtl_433
+  when: rtl433_checkout is changed or not rtl433_binary.stat.exists
+
+- name: Build and install rtl_433
+  ansible.builtin.command: cmake --build build --target install
+  args:
+    chdir: /usr/local/src/rtl_433
+  when: rtl433_checkout is changed or not rtl433_binary.stat.exists
+  notify: restart rtl433-postgres
+
+# rtl_433's -R protocol numeric IDs can shift between versions -- don't
+# trust a guessed number in vars.yml. This surfaces the real ones for
+# THIS build directly in the ansible output so they can be copied into
+# rtl433_protocols and the play re-run.
+- name: List Acurite protocols supported by this rtl_433 build
+  ansible.builtin.shell: "{{ rtl433_install_prefix }}/bin/rtl_433 -R help 2>&1 | grep -i acurite"
+  register: rtl433_acurite_protocols
+  changed_when: false
+
+- name: Show the Acurite protocol IDs for this build
+  ansible.builtin.debug:
+    msg: >-
+      {{ rtl433_acurite_protocols.stdout_lines }}
+      -- copy the Tower/Atlas IDs into rtl433_protocols in
+      inventory/group_vars/app/vars.yml and re-run to narrow reception
+      to just those two. Currently rtl433_protocols is
+      {{ 'empty (receiving all supported protocols)' if not rtl433_protocols else rtl433_protocols }}.

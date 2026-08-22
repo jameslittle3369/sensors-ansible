@@ -1,0 +1,16 @@
+---
+- name: Deploy the sensors-api systemd unit
+  ansible.builtin.template:
+    src: sensors-api.service.j2
+    dest: /etc/systemd/system/sensors-api.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart sensors-api
+
+- name: Ensure sensors-api is enabled and running
+  ansible.builtin.systemd:
+    name: sensors-api
+    daemon_reload: true
+    enabled: true
+    state: started

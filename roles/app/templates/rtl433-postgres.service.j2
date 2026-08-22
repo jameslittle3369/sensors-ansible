@@ -1,0 +1,20 @@
+# Managed by Ansible (roles/app) -- do not edit by hand.
+# A persistent pipeline (not a timer/oneshot like the other sensor apps):
+# rtl_433 streams JSON continuously, piped straight into rtl_2_postgres.py.
+
+[Unit]
+Description=rtl_433 -> rtl_2_postgres pipeline (Acurite Tower/Atlas)
+After=network.target
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_base_dir }}/rtl-postgres
+EnvironmentFile={{ app_base_dir }}/rtl-postgres/.env
+ExecStart=/bin/sh -c '{{ rtl433_install_prefix }}/bin/rtl_433 -F json{% for p in rtl433_protocols %} -R {{ p }}{% endfor %} | {{ app_base_dir }}/rtl-postgres/.venv/bin/python -u {{ app_base_dir }}/rtl-postgres/rtl_2_postgres.py --verbose'
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

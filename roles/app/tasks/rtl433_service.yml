@@ -1,0 +1,71 @@
+---
+# rtl_433 needs USB access to the SDR dongle. The apt-installed rtl-sdr
+# package (see rtl433_build.yml) ships udev rules granting the plugdev
+# group device access, so app_user just needs to be a member -- no need
+# to run any of this as root.
+- name: Add sensors-app user to plugdev (USB SDR device access)
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    groups: plugdev
+    append: true
+
+- name: Clone/update rtl-postgres
+  ansible.builtin.git:
+    repo: "{{ rtl_postgres_repo }}"
+    dest: "{{ app_base_dir }}/rtl-postgres"
+    version: main
+  become: true
+  become_method: su
+  become_user: "{{ app_user }}"
+  become_flags: '-l -s /bin/sh'
+  notify: restart rtl433-postgres
+
+- name: Create rtl-postgres venv
+  ansible.builtin.command: >
+    /usr/local/bin/uv venv --python {{ app_python_version }}
+    {{ app_base_dir }}/rtl-postgres/.venv
+  args:
+    creates: "{{ app_base_dir }}/rtl-postgres/.venv/bin/python"
+  become: true
+  become_method: su
+  become_user: "{{ app_user }}"
+  become_flags: '-l -s /bin/sh'
+
+- name: Install rtl-postgres dependencies
+  ansible.builtin.command: >
+    /usr/local/bin/uv pip install
+    --python {{ app_base_dir }}/rtl-postgres/.venv/bin/python
+    -r requirements.txt
+  args:
+    chdir: "{{ app_base_dir }}/rtl-postgres"
+  become: true
+  become_method: su
+  become_user: "{{ app_user }}"
+  become_flags: '-l -s /bin/sh'
+  register: rtl_postgres_uv_install
+  changed_when: "'Installed' in rtl_postgres_uv_install.stderr or 'Installed' in rtl_postgres_uv_install.stdout"
+
+- name: Deploy rtl-postgres environment file
+  ansible.builtin.template:
+    src: rtl_postgres.env.j2
+    dest: "{{ app_base_dir }}/rtl-postgres/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0600'
+  notify: restart rtl433-postgres
+
+- name: Deploy the rtl_433 | rtl_2_postgres pipeline service
+  ansible.builtin.template:
+    src: rtl433-postgres.service.j2
+    dest: /etc/systemd/system/rtl433-postgres.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart rtl433-postgres
+
+- name: Ensure the rtl433-postgres pipeline service is enabled and running
+  ansible.builtin.systemd:
+    name: rtl433-postgres
+    enabled: true
+    state: started
+    daemon_reload: true

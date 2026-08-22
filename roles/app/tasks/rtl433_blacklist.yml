@@ -1,0 +1,69 @@
+---
+# The RTL2838 dongle (0bda:2838, confirmed via lsusb) is a DVB-T TV tuner
+# by default -- the kernel's dvb_usb_rtl28xxu driver auto-claims it,
+# which blocks rtl_433's direct libusb access. This surfaces as
+# "usb_open error -3" plus rtl_433's generic "fix the device permissions"
+# hint, which is misleading -- confirmed via `lsmod | grep -iE 'dvb|rtl'`
+# showing dvb_usb_rtl28xxu/dvb_usb_v2/dvb_core/rtl2832 loaded and bound
+# to the device. This is a kernel-driver conflict, not a udev/group
+# permissions gap.
+
+- name: Blacklist the DVB-T/SDR kernel modules that claim the RTL-SDR dongle
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/blacklist-rtlsdr.conf
+    content: |
+      # Managed by Ansible (roles/app) -- do not edit by hand.
+      # Prevents the kernel's DVB-T tuner driver from claiming the
+      # RTL-SDR dongle, which otherwise blocks rtl_433's direct USB
+      # access ("usb_open error -3").
+      blacklist dvb_usb_rtl28xxu
+      blacklist dvb_usb_v2
+      blacklist dvb_core
+      blacklist rtl2832
+      blacklist rtl2832_sdr
+    owner: root
+    group: root
+    mode: '0644'
+  register: rtlsdr_blacklist
+
+# rtl433-postgres has Restart=always and, while failing, respawns every
+# few seconds -- each respawn briefly opens the USB device again, which
+# can race with modprobe -r and make the unload below fail even when
+# nothing "real" is using the driver. Stop it first so nothing is
+# contending for the device during the unload window; the "ensure
+# started" task later in rtl433_service.yml brings it back.
+- name: Stop rtl433-postgres before touching the kernel modules
+  ansible.builtin.systemd:
+    name: rtl433-postgres
+    state: stopped
+  failed_when: false
+
+# Best-effort live unload, in dependency order (leaf modules first) --
+# blacklisting alone only prevents loading at the *next* boot, it
+# doesn't unload what's already loaded right now.
+- name: Unload the conflicting kernel modules now (best effort)
+  ansible.builtin.command: "modprobe -r {{ item }}"
+  loop:
+    - dvb_usb_rtl28xxu
+    - dvb_usb_v2
+    - dvb_core
+    - rtl2832_sdr
+    - rtl2832
+  register: rtlsdr_unload
+  failed_when: false
+  changed_when: rtlsdr_unload.rc == 0
+  notify: restart rtl433-postgres
+
+- name: Check whether the conflicting driver is still loaded
+  ansible.builtin.command: lsmod
+  register: rtlsdr_lsmod_after
+  changed_when: false
+
+- name: Warn if a reboot is needed to fully release the device
+  ansible.builtin.debug:
+    msg: >-
+      dvb_usb_rtl28xxu is still loaded after modprobe -r -- the live
+      unload didn't fully take (often because it was claimed before
+      this play ran). The blacklist file is in place for next boot, so
+      a reboot of rpi4-app will resolve this cleanly.
+  when: "'dvb_usb_rtl28xxu' in rtlsdr_lsmod_after.stdout"

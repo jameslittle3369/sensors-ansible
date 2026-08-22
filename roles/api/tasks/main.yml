@@ -1,7 +1,6 @@
 ---
-# Placeholder role for rpi4-api (nginx + FastAPI + uv-managed Python).
-# No implementation yet -- see roles/postgres for the task-file-per-concern
-# pattern to follow when this is built out.
-- name: (stub) rpi4-api role not yet implemented
-  ansible.builtin.debug:
-    msg: "roles/api has no tasks yet -- placeholder only."
+- import_tasks: user.yml
+- import_tasks: uv_install.yml
+- import_tasks: nginx.yml
+- import_tasks: app.yml
+- import_tasks: service.yml

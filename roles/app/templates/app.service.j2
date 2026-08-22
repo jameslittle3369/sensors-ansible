@@ -1,0 +1,13 @@
+# Managed by Ansible (roles/app) -- do not edit by hand.
+# Triggered by sensors-app-{{ item.name }}.timer, not started directly.
+
+[Unit]
+Description=sensors-app: {{ item.name }} (--push-api)
+
+[Service]
+Type=oneshot
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_base_dir }}/{{ item.name }}
+EnvironmentFile={{ app_base_dir }}/{{ item.name }}/.env
+ExecStart={{ app_base_dir }}/{{ item.name }}/.venv/bin/python {{ item.entrypoint }} --push-api

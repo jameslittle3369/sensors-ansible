@@ -1,0 +1,10 @@
+---
+- name: reload nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded
+
+- name: restart sensors-api
+  ansible.builtin.systemd:
+    name: sensors-api
+    state: restarted

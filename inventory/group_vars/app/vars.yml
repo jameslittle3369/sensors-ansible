@@ -1,3 +1,105 @@
 ---
-# Placeholder for rpi4-app group vars (Grafana + uv-managed Python + standalone
-# systemd services/timers). Not yet in use -- rpi4-app is not provisioned yet.
+app_user: sensors-app
+app_group: sensors-app
+app_base_dir: /srv/sensors-app
+app_python_version: "3.14"
+
+# Through nginx on rpi4-api, not uvicorn directly.
+api_base_url: "http://10.0.0.13/v1"
+
+grafana_apt_key_url: https://apt.grafana.com/gpg.key
+grafana_apt_signing_key_path: /usr/share/keyrings/grafana-archive-keyring.asc
+
+rtl433_repo: https://github.com/merbanan/rtl_433.git
+rtl433_install_prefix: /usr/local
+# Every Acurite-labeled protocol from `rtl_433 -R help` on the actual
+# built binary (confirmed via the ansible run's own output) -- rtl_433
+# has consolidated what's commonly sold as "Acurite Tower" and "Atlas"
+# sensors into a handful of IDs rather than one each per name, so this
+# covers the whole family rather than guessing which single ID matches
+# the exact hardware on hand.
+rtl433_protocols: [10, 11, 40, 41, 55, 74, 163, 197, 326]
+
+# Timer-based apps: each gets its own clone + venv + .env + systemd
+# timer/oneshot-service. `env` becomes that app's .env file verbatim
+# (plus api_base_url, added automatically) -- vaulted secrets are
+# referenced here via Jinja, not hardcoded.
+sensor_apps:
+  - name: emporia
+    repo: https://github.com/jameslittle3369/LilLittleEmporiaEnergy.git
+    entrypoint: Emporia_Energy.py
+    interval: 2min
+    env:
+      EMPORIA_USERNAME: "{{ vault_emporia_username }}"
+      EMPORIA_PASSWORD: "{{ vault_emporia_password }}"
+      EMPORIA_TOKEN_FILE: emporia_tokens.json
+      TIMEZONE: "{{ sensors_timezone }}"
+      # Only used by manual/cron --sendemail runs -- --push-api ignores these.
+      SMTP_USER: "{{ vault_smtp_user }}"
+      SMTP_APP_PASSWORD: "{{ vault_smtp_password }}"
+      EMAIL_FROM: "{{ vault_smtp_user }}"
+      EMAIL_TO: "{{ sensors_email_to }}"
+
+  - name: kasa
+    repo: https://github.com/jameslittle3369/LilLittleKasaEnergy.git
+    entrypoint: kasa_energy.py
+    interval: 2min
+    env:
+      KASA_DISCOVERY_TARGET: "{{ kasa_discovery_target }}"
+      KASA_DISCOVERY_TIMEOUT: 5
+      # Newer-firmware Kasa devices require TP-Link cloud auth to discover;
+      # blank in vault.yml is fine if all your devices are older/local-only.
+      KASA_USERNAME: "{{ vault_kasa_username }}"
+      KASA_PASSWORD: "{{ vault_kasa_password }}"
+      # Only used by manual/cron --sendemail runs -- --push-api ignores these.
+      # Unlike the other three apps, kasa_energy.py has no SMTP_SERVER
+      # default, so this one is required for --sendemail to even start.
+      SMTP_SERVER: smtp.gmail.com
+      SENDER_EMAIL: "{{ vault_smtp_user }}"
+      APP_PASSWORD: "{{ vault_smtp_password }}"
+      RECEIVER_EMAIL: "{{ sensors_email_to }}"
+
+  - name: ikea
+    repo: https://github.com/jameslittle3369/LilLittleIkeaEnergy.git
+    entrypoint: ikea_energy.py
+    interval: 5min
+    env:
+      TRADFRI_HOST: "{{ ikea_gateway_host }}"
+      TRADFRI_IDENTITY: sensors-app
+      TRADFRI_PSK: "{{ vault_tradfri_psk }}"
+      TRADFRI_TRANSPORT: auto
+      # Only used by manual/cron --sendemail runs -- --push-api ignores these.
+      SMTP_USERNAME: "{{ vault_smtp_user }}"
+      SMTP_PASSWORD: "{{ vault_smtp_password }}"
+      EMAIL_FROM: "{{ vault_smtp_user }}"
+      EMAIL_TO: "{{ sensors_email_to }}"
+
+  - name: ring
+    repo: https://github.com/jameslittle3369/LilLittleRingEnergy.git
+    entrypoint: Ring_Energy.py
+    interval: 5min
+    env:
+      RING_USER_AGENT: sensors-app-ring-1.0
+      RING_TOKEN_CACHE: .ring_token.cache
+      RING_TIMEOUT: "30"
+      # Only used by manual/cron --sendemail runs -- --push-api ignores these.
+      GMAIL_USER: "{{ vault_smtp_user }}"
+      GMAIL_APP_PASSWORD: "{{ vault_smtp_password }}"
+      EMAIL_FROM: "{{ vault_smtp_user }}"
+      EMAIL_TO: "{{ sensors_email_to }}"
+
+# TODO: update once the rtl-postgres repo is created and pushed.
+rtl_postgres_repo: https://github.com/jameslittle3369/LilLittleRTL_433.git
+rtl_postgres_env:
+  EXCLUDE_SENSOR_IDS: ""
+
+# TODO: your Pi's actual local timezone, TRADFRI gateway IP, and Kasa LAN
+# broadcast address -- filling in generic placeholders for now.
+sensors_timezone: America/Chicago
+ikea_gateway_host: "10.0.0.42"
+kasa_discovery_target: "10.0.0.255"
+
+# Recipient for all four apps' manual/cron --sendemail reports (the sender
+# is the shared vault_smtp_user account itself). Not a secret -- just your
+# inbox address.
+sensors_email_to: "CHANGE_ME"

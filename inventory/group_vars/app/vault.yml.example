@@ -1,0 +1,24 @@
+# Copy this file's contents into an actual vault file and encrypt it:
+#   ansible-vault create inventory/group_vars/app/vault.yml
+#
+# Do not commit an unencrypted vault.yml.
+
+vault_emporia_username: "CHANGE_ME"
+vault_emporia_password: "CHANGE_ME"
+# Leave as CHANGE_ME (or blank) on first deploy -- this is obtained by
+# running `ikea_energy.py --pair` once against the real gateway (see
+# README "one-time manual step"), not something you invent up front.
+vault_tradfri_psk: "CHANGE_ME"
+
+# Only needed if your Kasa devices are new enough to require TP-Link cloud
+# auth for discovery (see the app's own README) -- leave as CHANGE_ME
+# otherwise, kasa_energy.py works anonymously against older/local-only devices.
+vault_kasa_username: "CHANGE_ME"
+vault_kasa_password: "CHANGE_ME"
+
+# One shared Gmail account used by all four apps' --sendemail report modes
+# (emporia, kasa, ikea, ring each read it under a differently-named env var --
+# see inventory/group_vars/app/vars.yml). Use a Gmail *app password*, not the
+# account's real login password.
+vault_smtp_user: "CHANGE_ME"
+vault_smtp_password: "CHANGE_ME"

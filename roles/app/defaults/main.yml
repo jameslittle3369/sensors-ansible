@@ -1,0 +1,7 @@
+---
+app_user: sensors-app
+app_group: sensors-app
+app_base_dir: /srv/sensors-app
+app_python_version: "3.14"
+sensor_apps: []
+rtl433_protocols: []

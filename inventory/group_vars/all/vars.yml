@@ -1,6 +1,10 @@
 ---
 ansible_user: root
 ansible_password: "{{ vault_root_ssh_password }}"
+
+# rpi4-db's private IP, used by roles/api to build DATABASE_URL without
+# hardcoding it inside the api role.
+postgres_host: "10.0.0.11"
 # No ansible_become var here: the default (off, per ansible.cfg) already
 # applies everywhere except the postgres role's roles_db.yml tasks, which
 # opt into become: true explicitly. Setting ansible_become: false here

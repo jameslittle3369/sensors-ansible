@@ -1,0 +1,111 @@
+---
+# Same become_flags rationale as roles/api/tasks/app.yml: -s /bin/sh
+# because app_user's shell is nologin, -l because plain `su` doesn't
+# reset HOME (uv would otherwise try to write into /root).
+
+- name: Ensure git is installed
+  ansible.builtin.apt:
+    name: git
+    state: present
+
+# ikea's DTLSSocket dependency ships no wheels at all (any platform, any
+# Python version) -- pip/uv has to compile it from source, which needs
+# this toolchain. Installed unconditionally here rather than scoped to
+# just the ikea app, since it's a small, harmless, generically-useful
+# set of build tools for any app that might need to compile a native
+# extension.
+- name: Install build toolchain for native Python extensions (e.g. ikea's DTLSSocket)
+  ansible.builtin.apt:
+    name: [build-essential, autoconf, automake, libtool]
+    state: present
+    update_cache: true
+
+- name: Clone/update each sensor app
+  ansible.builtin.git:
+    repo: "{{ item.repo }}"
+    dest: "{{ app_base_dir }}/{{ item.name }}"
+    version: main
+  become: true
+  become_method: su
+  become_user: "{{ app_user }}"
+  become_flags: '-l -s /bin/sh'
+  loop: "{{ sensor_apps }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: reload systemd daemon
+
+- name: Create each app's venv
+  ansible.builtin.command: >
+    /usr/local/bin/uv venv --python {{ app_python_version }}
+    {{ app_base_dir }}/{{ item.name }}/.venv
+  args:
+    creates: "{{ app_base_dir }}/{{ item.name }}/.venv/bin/python"
+  become: true
+  become_method: su
+  become_user: "{{ app_user }}"
+  become_flags: '-l -s /bin/sh'
+  loop: "{{ sensor_apps }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Install each app's dependencies
+  ansible.builtin.command: >
+    /usr/local/bin/uv pip install
+    --python {{ app_base_dir }}/{{ item.name }}/.venv/bin/python
+    -r requirements.txt
+  args:
+    chdir: "{{ app_base_dir }}/{{ item.name }}"
+  become: true
+  become_method: su
+  become_user: "{{ app_user }}"
+  become_flags: '-l -s /bin/sh'
+  register: uv_pip_install
+  changed_when: "'Installed' in uv_pip_install.stderr or 'Installed' in uv_pip_install.stdout"
+  loop: "{{ sensor_apps }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Deploy each app's environment file
+  ansible.builtin.template:
+    src: app.env.j2
+    dest: "{{ app_base_dir }}/{{ item.name }}/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0600'
+  loop: "{{ sensor_apps }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Deploy each app's systemd service (oneshot, triggered by its timer)
+  ansible.builtin.template:
+    src: app.service.j2
+    dest: "/etc/systemd/system/sensors-app-{{ item.name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ sensor_apps }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: reload systemd daemon
+
+- name: Deploy each app's systemd timer
+  ansible.builtin.template:
+    src: app.timer.j2
+    dest: "/etc/systemd/system/sensors-app-{{ item.name }}.timer"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ sensor_apps }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: reload systemd daemon
+
+- name: Ensure each app's timer is enabled and started
+  ansible.builtin.systemd:
+    name: "sensors-app-{{ item.name }}.timer"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop: "{{ sensor_apps }}"
+  loop_control:
+    label: "{{ item.name }}"

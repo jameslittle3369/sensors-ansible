@@ -1,0 +1,15 @@
+---
+# Copy this file's contents into an actual vault file and encrypt it:
+#   ansible-vault create inventory/group_vars/api/vault.yml
+#
+# vault_postgres_api_password (used to build DATABASE_URL) already lives
+# in inventory/group_vars/all/vault.yml -- it's not duplicated here.
+#
+# Do not commit an unencrypted vault.yml.
+
+vault_api_secret_key: "CHANGE_ME"
+vault_dyson_serial: "CHANGE_ME"
+vault_dyson_credentials: "CHANGE_ME"
+vault_dyson_product_type: "CHANGE_ME"
+vault_dyson_name: "CHANGE_ME"
+vault_dyson_version: "CHANGE_ME"

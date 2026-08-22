@@ -1,0 +1,12 @@
+# Managed by Ansible (roles/app) -- do not edit by hand.
+
+[Unit]
+Description=Timer for sensors-app: {{ item.name }}
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec={{ item.interval }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

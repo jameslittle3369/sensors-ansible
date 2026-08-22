@@ -1,0 +1,68 @@
+---
+# The three su-become tasks below use become_flags: '-l -s /bin/sh':
+# -s /bin/sh because sensors-api's shell is nologin (su -c would
+# otherwise refuse to run anything, same issue hit with the postgres
+# role's roles_db.yml); -l because plain `su` (without login) does NOT
+# reset HOME/USER -- without it, HOME would stay /root while running as
+# sensors-api's uid, and `uv` (which caches Python installs/downloads
+# under $HOME/.local/share/uv) would try to write into /root and get
+# permission denied.
+
+- name: Ensure git is installed
+  ansible.builtin.apt:
+    name: git
+    state: present
+
+- name: Clone/update sensors-backend-fastapi
+  ansible.builtin.git:
+    repo: "{{ api_repo_url }}"
+    version: "{{ api_repo_version }}"
+    dest: "{{ api_app_dir }}"
+  become: true
+  become_method: su
+  become_user: "{{ api_app_user }}"
+  become_flags: '-l -s /bin/sh'
+  notify: restart sensors-api
+
+- name: Install dependencies with uv sync
+  ansible.builtin.command: /usr/local/bin/uv sync --frozen
+  args:
+    chdir: "{{ api_app_dir }}"
+  become: true
+  become_method: su
+  become_user: "{{ api_app_user }}"
+  become_flags: '-l -s /bin/sh'
+  register: uv_sync
+  changed_when: "'Installed' in uv_sync.stderr or 'Installed' in uv_sync.stdout"
+  notify: restart sensors-api
+
+- name: Ensure the env file's parent directory exists
+  ansible.builtin.file:
+    path: "{{ api_env_file | dirname }}"
+    state: directory
+    owner: root
+    group: "{{ api_app_group }}"
+    mode: '0750'
+
+- name: Deploy the app's environment file
+  ansible.builtin.template:
+    src: api.env.j2
+    dest: "{{ api_env_file }}"
+    owner: root
+    group: "{{ api_app_group }}"
+    mode: '0640'
+  notify: restart sensors-api
+
+- name: Apply database migrations (alembic upgrade head)
+  ansible.builtin.command: /usr/local/bin/uv run alembic upgrade head
+  args:
+    chdir: "{{ api_app_dir }}"
+  become: true
+  become_method: su
+  become_user: "{{ api_app_user }}"
+  become_flags: '-l -s /bin/sh'
+  environment:
+    DATABASE_URL: "postgresql://api:{{ vault_postgres_api_password }}@{{ postgres_host }}/api"
+    SECRET_KEY: "{{ vault_api_secret_key }}"
+  register: alembic_upgrade
+  changed_when: "'Running upgrade' in alembic_upgrade.stderr"

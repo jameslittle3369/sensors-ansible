@@ -1,0 +1,17 @@
+# Managed by Ansible (roles/api) -- do not edit by hand.
+
+[Unit]
+Description=sensors-backend-fastapi
+After=network.target
+
+[Service]
+User={{ api_app_user }}
+Group={{ api_app_group }}
+WorkingDirectory={{ api_app_dir }}
+EnvironmentFile={{ api_env_file }}
+ExecStart={{ api_app_dir }}/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port {{ api_uvicorn_port }}
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

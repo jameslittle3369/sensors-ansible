@@ -1,0 +1,61 @@
+---
+- name: Install prerequisites for repo management
+  ansible.builtin.apt:
+    name: [ca-certificates, curl, gnupg, python3-debian]
+    state: present
+    update_cache: true
+
+- name: Ensure nginx keyring directory exists
+  ansible.builtin.file:
+    path: /usr/share/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download nginx.org signing key
+  ansible.builtin.get_url:
+    url: https://nginx.org/keys/nginx_signing.key
+    dest: /usr/share/keyrings/nginx-archive-keyring.asc
+    mode: '0644'
+
+- name: Add nginx.org apt repository (deb822 sources format)
+  ansible.builtin.deb822_repository:
+    name: nginx
+    types: deb
+    uris: https://nginx.org/packages/debian
+    suites: "{{ ansible_distribution_release }}"
+    components: nginx
+    architectures: arm64
+    signed_by: /usr/share/keyrings/nginx-archive-keyring.asc
+    state: present
+  register: nginx_repo
+
+- name: Refresh apt cache after adding nginx repo
+  ansible.builtin.apt:
+    update_cache: true
+  when: nginx_repo is changed
+
+- name: Install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+
+- name: Remove the stock nginx.org example site (would conflict on port 80)
+  ansible.builtin.file:
+    path: /etc/nginx/conf.d/default.conf
+    state: absent
+  notify: reload nginx
+
+- name: Deploy sensors-api nginx site
+  ansible.builtin.template:
+    src: nginx-sensors-api.conf.j2
+    dest: /etc/nginx/conf.d/sensors-api.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload nginx
+
+- name: Ensure nginx is enabled and running
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: started

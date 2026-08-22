@@ -1,0 +1,22 @@
+---
+- name: Install prerequisites for the uv installer
+  ansible.builtin.apt:
+    name: [ca-certificates, curl]
+    state: present
+    update_cache: true
+
+- name: Install uv system-wide
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+  args:
+    creates: /usr/local/bin/uv
+    executable: /bin/bash
+  environment:
+    UV_INSTALL_DIR: /usr/local/bin
+
+# No separate "uv python install" step here: `uv sync` in app.yml runs as
+# api_app_user and provisions the pinned Python version (from pyproject's
+# requires-python) into that user's own uv data dir on demand. Running
+# `uv python install` as root here would install into root's uv data dir
+# instead, which api_app_user can't use -- pointless and misleading.
