@@ -2,6 +2,15 @@
 ansible_user: root
 ansible_password: "{{ vault_root_ssh_password }}"
 
+# Networks allowed through ufw for SSH and each host's own service ports
+# (see each group's ufw_extra_ports) -- the wired LAN, the wifi LAN these
+# hosts are also still bridged to, plus (once tailscale is up) the
+# tailscale0 interface is trusted wholesale in roles/common/tasks/ufw.yml,
+# not listed here since it's an interface match, not a CIDR.
+ufw_trusted_cidrs:
+  - 10.0.0.0/24
+  - 192.168.1.0/24
+
 # rpi4-db's private IP, used by roles/api to build DATABASE_URL without
 # hardcoding it inside the api role.
 postgres_host: "10.0.0.11"

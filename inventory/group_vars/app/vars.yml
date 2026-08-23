@@ -4,6 +4,10 @@ app_group: sensors-app
 app_base_dir: /srv/sensors-app
 app_python_version: "3.14"
 
+ufw_extra_ports:
+  - port: 3000
+    proto: tcp # Grafana
+
 # Through nginx on rpi4-api, not uvicorn directly.
 api_base_url: "http://10.0.0.13/v1"
 

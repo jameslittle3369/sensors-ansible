@@ -1,0 +1,51 @@
+---
+# Installs and enables tailscaled only. Deliberately does NOT run
+# `tailscale up` -- authenticating this node to the tailnet is a one-time
+# manual step (SSH in, run `tailscale up`, approve the printed login link
+# in a browser), matching the pattern already used for Ring's --auth and
+# IKEA's --pair in roles/app.
+
+- name: Install prerequisites for repo management
+  ansible.builtin.apt:
+    name: [ca-certificates, curl, gnupg, python3-debian]
+    state: present
+    update_cache: true
+
+- name: Ensure apt keyring directory exists
+  ansible.builtin.file:
+    path: /usr/share/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Tailscale's apt signing key
+  ansible.builtin.get_url:
+    url: "https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg"
+    dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    mode: '0644'
+
+- name: Add Tailscale apt repository (deb822 sources format)
+  ansible.builtin.deb822_repository:
+    name: tailscale
+    types: deb
+    uris: https://pkgs.tailscale.com/stable/debian
+    suites: "{{ ansible_distribution_release }}"
+    components: main
+    signed_by: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    state: present
+  register: tailscale_repo
+
+- name: Refresh apt cache after adding Tailscale repo
+  ansible.builtin.apt:
+    update_cache: true
+  when: tailscale_repo is changed
+
+- name: Install tailscale
+  ansible.builtin.apt:
+    name: tailscale
+    state: present
+
+- name: Ensure tailscaled is enabled and running
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started

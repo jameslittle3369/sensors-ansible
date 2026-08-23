@@ -1,3 +1,4 @@
 ---
 - import_tasks: fail2ban.yml
 - import_tasks: chrony.yml
+- import_tasks: ufw.yml

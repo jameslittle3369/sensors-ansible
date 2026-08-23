@@ -21,4 +21,5 @@
   hosts: app
   gather_facts: true
   roles:
+    - tailscale
     - app

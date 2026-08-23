@@ -1,0 +1,57 @@
+---
+# Adds rules only -- deliberately never touches ufw's enabled/disabled
+# state. Enabling is a manual step (`ufw status verbose` to review, then
+# `ufw enable`) run once over an existing SSH session, so a bad rule can
+# never lock out access via an unattended ansible run.
+
+- name: Install ufw
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Set default incoming policy to deny
+  community.general.ufw:
+    direction: incoming
+    policy: deny
+
+- name: Set default outgoing policy to allow
+  community.general.ufw:
+    direction: outgoing
+    policy: allow
+
+- name: Allow SSH from trusted networks
+  community.general.ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+    src: "{{ item }}"
+    comment: "Managed by Ansible (roles/common)"
+  loop: "{{ ufw_trusted_cidrs }}"
+
+- name: Allow this host's extra service ports from trusted networks
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.0.port }}"
+    proto: "{{ item.0.proto | default('tcp') }}"
+    src: "{{ item.1 }}"
+    comment: "Managed by Ansible (roles/common)"
+  with_nested:
+    - "{{ ufw_extra_ports }}"
+    - "{{ ufw_trusted_cidrs }}"
+  loop_control:
+    label: "{{ item.0.port }}/{{ item.0.proto | default('tcp') }} from {{ item.1 }}"
+
+# Least-privilege over tailscale0 too -- no blanket "allow all on
+# tailscale0" trust, and SSH is deliberately excluded here: SSH only
+# comes in over the trusted LAN/wifi CIDRs above, never over tailscale.
+- name: Allow this host's extra service ports over tailscale
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto | default('tcp') }}"
+    interface: tailscale0
+    direction: in
+    comment: "Managed by Ansible (roles/common)"
+  loop: "{{ ufw_extra_ports }}"
+  loop_control:
+    label: "{{ item.port }}/{{ item.proto | default('tcp') }} over tailscale0"

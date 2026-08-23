@@ -205,6 +205,29 @@ first, then do this by hand, then re-run):
   Put the printed PSK into `vault_tradfri_psk` (the security code itself
   doesn't need to go in the vault -- it's single-use), then re-run the
   playbook so the templated `.env` picks up the real PSK.
+- **Tailscale** (rpi4-app only): the `tailscale` role installs and enables
+  `tailscaled`, but doesn't authenticate the node -- ansible has no
+  authkey to work with (deliberately, to avoid a long-lived secret in the
+  vault). After a `--limit app` deploy, SSH in and run `tailscale up`,
+  then approve the printed login link in a browser. This is truly
+  one-time: `tailscaled` persists its node identity in
+  `/var/lib/tailscale/` and reconnects automatically on every reboot from
+  then on, with no further action needed.
+
+## ufw
+
+`roles/common` installs `ufw` and adds rules on every host (SSH plus each
+host's own service port -- 5432 on db, 80 on api, 3000/Grafana on app),
+scoped to `ufw_trusted_cidrs` (`inventory/group_vars/all/vars.yml`) and,
+for each host's own service port only (never SSH), the `tailscale0`
+interface once that's up. **It deliberately never runs `ufw enable`** --
+review what's staged, then flip it on yourself:
+
+```bash
+ufw show added      # rules staged, not yet enforced
+ufw status verbose  # will read "Status: inactive" until you enable it
+ufw enable          # your call, once you're satisfied
+```
 
 ## Verification
 

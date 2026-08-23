@@ -9,3 +9,7 @@ api_python_version: "3.14"
 api_uvicorn_port: 8000
 api_owserver_url: "http://10.0.0.188/details.xml"
 api_dyson_host: "10.0.0.17"
+
+ufw_extra_ports:
+  - port: 80
+    proto: tcp

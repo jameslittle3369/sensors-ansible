@@ -2,3 +2,9 @@
 common_packages:
   - fail2ban
   - chrony
+
+# Ports this specific host needs open beyond SSH, reachable from
+# ufw_trusted_cidrs (see inventory/group_vars/all/vars.yml). Each group's
+# own vars.yml sets this to its actual service port(s); hosts with nothing
+# else to expose (none currently) fall back to this empty default.
+ufw_extra_ports: []
