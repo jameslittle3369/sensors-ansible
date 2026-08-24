@@ -92,6 +92,22 @@ sensor_apps:
       EMAIL_FROM: "{{ vault_smtp_user }}"
       EMAIL_TO: "{{ sensors_email_to }}"
 
+  - name: honeywell
+    repo: https://github.com/jameslittle3369/LilLittleHoneywellHVAC.git
+    entrypoint: honeywell_hvac.py
+    # mytotalconnectcomfort.com rate-limits frequent logins, and this
+    # script logs in fresh every run -- conservative interval vs. the
+    # 2-5min used for the LAN-only apps.
+    interval: 15min
+    env:
+      HONEYWELL_USERNAME: "{{ vault_honeywell_username }}"
+      HONEYWELL_PASSWORD: "{{ vault_honeywell_password }}"
+      # Only used by manual/cron --sendemail runs -- --push-api ignores these.
+      SMTP_USERNAME: "{{ vault_smtp_user }}"
+      SMTP_PASSWORD: "{{ vault_smtp_password }}"
+      EMAIL_FROM: "{{ vault_smtp_user }}"
+      EMAIL_TO: "{{ sensors_email_to }}"
+
 # TODO: update once the rtl-postgres repo is created and pushed.
 rtl_postgres_repo: https://github.com/jameslittle3369/LilLittleRTL_433.git
 rtl_postgres_env:

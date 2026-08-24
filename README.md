@@ -39,7 +39,8 @@ ansible-vault create inventory/group_vars/app/vault.yml
 #   vault_emporia_username / vault_emporia_password
 #   vault_tradfri_psk
 #   vault_kasa_username / vault_kasa_password (only if your Kasa devices need cloud auth)
-#   vault_smtp_user / vault_smtp_password (shared Gmail app password for all four
+#   vault_honeywell_username / vault_honeywell_password
+#   vault_smtp_user / vault_smtp_password (shared Gmail app password for all five
 #     apps' manual/cron --sendemail reports; unrelated to --push-api)
 ```
 
@@ -153,7 +154,7 @@ ansible-playbook site.yml --ask-vault-pass
     ansible-managed going forward (enabled+started) without risking an
     apt-triggered reinstall disturbing what's there. No dashboard
     import/provisioning in this pass.
-  - **Four timer-based apps** (`emporia`, `kasa`, `ikea`, `ring`, driven by
+  - **Five timer-based apps** (`emporia`, `kasa`, `ikea`, `ring`, `honeywell`, driven by
     the `sensor_apps` list in `vars.yml`): `git clone`/pulls each repo into
     `/srv/sensors-app/<name>`, creates a `uv venv` + `uv pip install -r
     requirements.txt` (none of these repos have a `pyproject.toml`, so
@@ -268,7 +269,7 @@ On rpi4-app:
 
 ```bash
 systemctl status sensors-app-emporia.timer sensors-app-kasa.timer \
-  sensors-app-ikea.timer sensors-app-ring.timer
+  sensors-app-ikea.timer sensors-app-ring.timer sensors-app-honeywell.timer
 systemctl status rtl433-postgres grafana-server
 journalctl -u rtl433-postgres -n 50
 # force a timer-based app to run right now instead of waiting for its interval:

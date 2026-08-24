@@ -16,9 +16,14 @@ vault_tradfri_psk: "CHANGE_ME"
 vault_kasa_username: "CHANGE_ME"
 vault_kasa_password: "CHANGE_ME"
 
-# One shared Gmail account used by all four apps' --sendemail report modes
-# (emporia, kasa, ikea, ring each read it under a differently-named env var --
-# see inventory/group_vars/app/vars.yml). Use a Gmail *app password*, not the
-# account's real login password.
+# Honeywell Total Connect Comfort account -- plain login, no pairing/2FA
+# step needed (unlike ikea/ring above).
+vault_honeywell_username: "CHANGE_ME"
+vault_honeywell_password: "CHANGE_ME"
+
+# One shared Gmail account used by all five apps' --sendemail report modes
+# (emporia, kasa, ikea, ring, honeywell each read it under a
+# differently-named env var -- see inventory/group_vars/app/vars.yml).
+# Use a Gmail *app password*, not the account's real login password.
 vault_smtp_user: "CHANGE_ME"
 vault_smtp_password: "CHANGE_ME"
