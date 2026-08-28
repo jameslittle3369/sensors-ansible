@@ -7,6 +7,19 @@ app_python_version: "3.14"
 ufw_extra_ports:
   - port: 3000
     proto: tcp # Grafana
+  - port: "32768:60999"
+    proto: udp
+    # Kasa's discovery client binds an OS-assigned ephemeral local UDP
+    # port (not a fixed port) and broadcasts to 10.0.0.255:9999/:20002;
+    # each device replies as a *unicast* packet back to that ephemeral
+    # port. Conntrack doesn't reliably associate that reply with the
+    # original broadcast (the reply's source IP is the device's own
+    # address, not the broadcast address the query was sent to), so
+    # ufw's default deny-incoming was blocking every reply outright --
+    # confirmed by `ufw disable` fixing discovery immediately. This is
+    # the standard Linux ephemeral port range (`cat
+    # /proc/sys/net/ipv4/ip_local_port_range` on rpi4-app to confirm --
+    # adjust if it differs).
 
 # Through nginx on rpi4-api, not uvicorn directly.
 api_base_url: "http://10.0.0.13/v1"
@@ -122,4 +135,4 @@ kasa_discovery_target: "10.0.0.255"
 # Recipient for all four apps' manual/cron --sendemail reports (the sender
 # is the shared vault_smtp_user account itself). Not a secret -- just your
 # inbox address.
-sensors_email_to: "CHANGE_ME"
+sensors_email_to: "james.a.little@hotmail.com"
