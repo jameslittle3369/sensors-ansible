@@ -11,3 +11,9 @@ Group={{ app_group }}
 WorkingDirectory={{ app_base_dir }}/{{ item.name }}
 EnvironmentFile={{ app_base_dir }}/{{ item.name }}/.env
 ExecStart={{ app_base_dir }}/{{ item.name }}/.venv/bin/python {{ item.entrypoint }} --push-api
+# A oneshot unit stays "activating" -- and its timer never fires again --
+# until this process exits. Bounds a hung run (e.g. an unbounded retry/
+# backoff loop inside a dependency) to 5 minutes instead of blocking
+# indefinitely; the timer's own recurrence handles "try again later"
+# once systemd kills it.
+TimeoutStartSec=5min
