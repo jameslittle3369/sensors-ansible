@@ -121,16 +121,35 @@ sensor_apps:
       EMAIL_FROM: "{{ vault_smtp_user }}"
       EMAIL_TO: "{{ sensors_email_to }}"
 
+  - name: balboa-spa
+    repo: https://github.com/jameslittle3369/lillittle-balboa-spa.git
+    entrypoint: balboa_spa.py
+    # Local network only (no cloud account) -- same rationale as kasa/
+    # emporia's 2min interval, no rate-limit concern.
+    interval: 2min
+    env:
+      SPA_HOST: "{{ spa_host }}"
+      SPA_PORT: 4257
+      SPA_NAME: Spa
+      # Only used by manual/cron --sendemail runs -- --push-api ignores these.
+      SMTP_SERVER: smtp.gmail.com
+      SENDER_EMAIL: "{{ vault_smtp_user }}"
+      APP_PASSWORD: "{{ vault_smtp_password }}"
+      RECEIVER_EMAIL: "{{ sensors_email_to }}"
+
 # TODO: update once the rtl-postgres repo is created and pushed.
 rtl_postgres_repo: https://github.com/jameslittle3369/LilLittleRTL_433.git
 rtl_postgres_env:
   EXCLUDE_SENSOR_IDS: ""
 
-# TODO: your Pi's actual local timezone, TRADFRI gateway IP, and Kasa LAN
-# broadcast address -- filling in generic placeholders for now.
+# TODO: your Pi's actual local timezone, TRADFRI gateway IP, Kasa LAN
+# broadcast address, and spa IP -- filling in generic placeholders for now.
 sensors_timezone: America/Chicago
 ikea_gateway_host: "10.0.0.42"
 kasa_discovery_target: "10.0.0.255"
+# Use a router DHCP reservation, not a bare lease -- a moved IP silently
+# breaks polling until someone notices (same caution as ikea_gateway_host).
+spa_host: "10.0.0.35"
 
 # Recipient for all four apps' manual/cron --sendemail reports (the sender
 # is the shared vault_smtp_user account itself). Not a secret -- just your
