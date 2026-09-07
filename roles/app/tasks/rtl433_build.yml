@@ -18,6 +18,13 @@
     repo: "{{ rtl433_repo }}"
     dest: /usr/local/src/rtl_433
     version: master
+    # Upstream's `nightly` tag is a rolling CI tag re-pointed to a new
+    # commit regularly; a plain `git fetch --tags` refuses to move a
+    # local tag to a different commit ("would clobber existing tag").
+    # force:true adds --force to that same fetch, so a moved tag updates
+    # instead of failing the whole task -- safe here since this checkout
+    # is build-source only, no local edits worth protecting.
+    force: true
   register: rtl433_checkout
 
 - name: Check whether the rtl_433 binary is already installed
