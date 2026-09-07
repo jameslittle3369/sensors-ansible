@@ -27,6 +27,13 @@ api_base_url: "http://10.0.0.13/v1"
 grafana_apt_key_url: https://apt.grafana.com/gpg.key
 grafana_apt_signing_key_path: /usr/share/keyrings/grafana-archive-keyring.asc
 
+# Grafana's own [smtp] section for alert-notification emails. Uses the same
+# shared Gmail app-password account as the five apps' --sendemail modes
+# (vault_smtp_user / vault_smtp_password) -- no dedicated Grafana secret.
+grafana_smtp_host: "smtp.gmail.com:587"
+grafana_smtp_from_name: "Grafana"
+grafana_smtp_starttls_policy: "MandatoryStartTLS"
+
 rtl433_repo: https://github.com/merbanan/rtl_433.git
 rtl433_install_prefix: /usr/local
 # Every Acurite-labeled protocol from `rtl_433 -R help` on the actual
@@ -142,10 +149,27 @@ rtl_postgres_repo: https://github.com/jameslittle3369/LilLittleRTL_433.git
 rtl_postgres_env:
   EXCLUDE_SENSOR_IDS: ""
 
+# TODO: update once you've created the GitHub repo for sensors-apps/alarm
+# and decided on its name/pushed it -- this placeholder will fail the
+# `git clone` task until then.
+alarm_repo: https://github.com/jameslittle3369/lillittle-alarm.git
+envisalink_host: "10.0.0.30"
+envisalink_port: 4025
+
+# DSC doesn't expose zone/partition names or types over the EnvisaLink TPI
+# protocol, only numbers -- these map your real zone/partition numbers to
+# friendly names (and, for zones, a type: door/window/motion/smoke/heat/
+# other) read by envisalink_2_postgres.py. Not secret, just your house's
+# layout -- fill in your real zone numbers here.
+alarm_zone_map:
+  "1": { name: "Front Door", type: "door" }
+alarm_partition_map:
+  "1": "Main"
+
 # TODO: your Pi's actual local timezone, TRADFRI gateway IP, Kasa LAN
 # broadcast address, and spa IP -- filling in generic placeholders for now.
 sensors_timezone: America/Chicago
-ikea_gateway_host: "10.0.0.42"
+ikea_gateway_host: "10.0.0.15"
 kasa_discovery_target: "10.0.0.255"
 # Use a router DHCP reservation, not a bare lease -- a moved IP silently
 # breaks polling until someone notices (same caution as ikea_gateway_host).

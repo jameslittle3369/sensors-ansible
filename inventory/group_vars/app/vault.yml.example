@@ -23,7 +23,14 @@ vault_honeywell_password: "CHANGE_ME"
 
 # One shared Gmail account used by all five apps' --sendemail report modes
 # (emporia, kasa, ikea, ring, honeywell each read it under a
-# differently-named env var -- see inventory/group_vars/app/vars.yml).
+# differently-named env var -- see inventory/group_vars/app/vars.yml) AND
+# by Grafana's own [smtp] alert-email config (roles/app/tasks/grafana.yml).
 # Use a Gmail *app password*, not the account's real login password.
 vault_smtp_user: "CHANGE_ME"
 vault_smtp_password: "CHANGE_ME"
+
+# The EnvisaLink module's own TPI password (set on the EnvisaLink itself,
+# e.g. via its local web UI) -- NOT the DSC panel's keypad access code.
+# envisalink_2_postgres.py only listens for status broadcasts; it never
+# arms, disarms, or bypasses anything, so no DSC code is needed at all.
+vault_envisalink_password: "CHANGE_ME"

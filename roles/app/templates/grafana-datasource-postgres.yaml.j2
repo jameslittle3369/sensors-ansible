@@ -1,0 +1,15 @@
+apiVersion: 1
+datasources:
+  - name: MiCasa Postgres
+    type: postgres
+    uid: cfvq4sip0ynlsf
+    access: proxy
+    url: 10.0.0.11:5432
+    database: api
+    user: api
+    isDefault: true
+    editable: true
+    jsonData:
+      sslmode: disable
+    secureJsonData:
+      password: "{{ vault_postgres_api_password }}"

@@ -1,0 +1,21 @@
+# Managed by Ansible (roles/app) -- do not edit by hand.
+# A persistent connection (not a timer/oneshot like the vendor-API sensor
+# apps): EnvisaLink's TPI protocol pushes zone/partition/trouble status
+# changes over one long-lived TCP connection rather than being polled.
+
+[Unit]
+Description=EnvisaLink TPI -> sensors-backend-fastapi (DSC alarm activity)
+After=network.target
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_base_dir }}/alarm
+EnvironmentFile={{ app_base_dir }}/alarm/.env
+ExecStart={{ app_base_dir }}/alarm/.venv/bin/python -u {{ app_base_dir }}/alarm/envisalink_2_postgres.py --verbose
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

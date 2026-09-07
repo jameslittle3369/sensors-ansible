@@ -1,0 +1,88 @@
+---
+# Persistent EnvisaLink TPI client (systemd service, not a timer -- see
+# the service template's own comment for why). No USB/device access
+# needed, unlike rtl433 -- this is a pure network client.
+
+- name: Clone/update alarm (EnvisaLink -> sensors-backend-fastapi)
+  ansible.builtin.git:
+    repo: "{{ alarm_repo }}"
+    dest: "{{ app_base_dir }}/alarm"
+    version: main
+  become: true
+  become_method: su
+  become_user: "{{ app_user }}"
+  become_flags: '-l -s /bin/sh'
+  notify: restart alarm-envisalink
+
+- name: Create alarm venv
+  ansible.builtin.command: >
+    /usr/local/bin/uv venv --python {{ app_python_version }}
+    {{ app_base_dir }}/alarm/.venv
+  args:
+    creates: "{{ app_base_dir }}/alarm/.venv/bin/python"
+  become: true
+  become_method: su
+  become_user: "{{ app_user }}"
+  become_flags: '-l -s /bin/sh'
+
+- name: Install alarm dependencies
+  ansible.builtin.command: >
+    /usr/local/bin/uv pip install
+    --python {{ app_base_dir }}/alarm/.venv/bin/python
+    -r requirements.txt
+  args:
+    chdir: "{{ app_base_dir }}/alarm"
+  become: true
+  become_method: su
+  become_user: "{{ app_user }}"
+  become_flags: '-l -s /bin/sh'
+  register: alarm_uv_install
+  changed_when: "'Installed' in alarm_uv_install.stderr or 'Installed' in alarm_uv_install.stdout"
+
+- name: Deploy alarm environment file
+  ansible.builtin.template:
+    src: alarm.env.j2
+    dest: "{{ app_base_dir }}/alarm/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0600'
+  no_log: true
+  notify: restart alarm-envisalink
+
+# Zone/partition numbers -> names/types aren't discoverable from the TPI
+# protocol at all -- see alarm_zone_map/alarm_partition_map in
+# inventory/group_vars/app/vars.yml. Ansible-managed like everything
+# else in this fleet, rather than hand-maintained directly on the host.
+- name: Deploy alarm zone map
+  ansible.builtin.template:
+    src: alarm-zone-map.json.j2
+    dest: "{{ app_base_dir }}/alarm/zone_map.json"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0644'
+  notify: restart alarm-envisalink
+
+- name: Deploy alarm partition map
+  ansible.builtin.template:
+    src: alarm-partition-map.json.j2
+    dest: "{{ app_base_dir }}/alarm/partition_map.json"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0644'
+  notify: restart alarm-envisalink
+
+- name: Deploy the EnvisaLink -> sensors-backend-fastapi service
+  ansible.builtin.template:
+    src: alarm-envisalink.service.j2
+    dest: /etc/systemd/system/alarm-envisalink.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart alarm-envisalink
+
+- name: Ensure the alarm-envisalink service is enabled and running
+  ansible.builtin.systemd:
+    name: alarm-envisalink
+    enabled: true
+    state: started
+    daemon_reload: true

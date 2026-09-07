@@ -6,3 +6,4 @@
 - import_tasks: rtl433_build.yml
 - import_tasks: rtl433_blacklist.yml
 - import_tasks: rtl433_service.yml
+- import_tasks: alarm.yml
