@@ -8,3 +8,8 @@
     name: rtl433-postgres
     state: restarted
     daemon_reload: true
+
+- name: restart grafana-server
+  ansible.builtin.systemd:
+    name: grafana-server
+    state: restarted

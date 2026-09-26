@@ -64,3 +64,35 @@
     name: grafana-server
     enabled: true
     state: started
+
+# Ansible now owns this [smtp] section -- any manual edits to it in
+# /etc/grafana/grafana.ini will be overwritten on the next playbook run.
+- name: Configure Grafana SMTP settings (non-secret keys)
+  community.general.ini_file:
+    path: /etc/grafana/grafana.ini
+    section: smtp
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+    create: false
+    backup: true
+  loop:
+    - { option: enabled, value: "true" }
+    - { option: host, value: "{{ grafana_smtp_host }}" }
+    - { option: user, value: "{{ vault_smtp_user }}" }
+    - { option: from_address, value: "{{ vault_smtp_user }}" }
+    - { option: from_name, value: "{{ grafana_smtp_from_name }}" }
+    - { option: startTLS_policy, value: "{{ grafana_smtp_starttls_policy }}" }
+  loop_control:
+    label: "{{ item.option }}"
+  notify: restart grafana-server
+
+- name: Configure Grafana SMTP password (vaulted secret)
+  community.general.ini_file:
+    path: /etc/grafana/grafana.ini
+    section: smtp
+    option: password
+    value: "{{ vault_smtp_password }}"
+    create: false
+    backup: true
+  no_log: true
+  notify: restart grafana-server
