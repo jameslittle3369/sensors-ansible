@@ -2,3 +2,11 @@
 inventory/group_vars/all/vault.yml
 inventory/group_vars/api/vault.yml
 inventory/group_vars/app/vault.yml
+
+# --- OS ----------------------------------------------------------------
+.DS_Store
+
+# --- Untouched full-res backup of the house photo -- not what gets
+# deployed (that's api_house_image_local_path's resized/re-encoded
+# version, committed normally), just a local convenience copy.
+roles/api/files/MiCasa-original.png

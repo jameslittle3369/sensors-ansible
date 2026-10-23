@@ -16,22 +16,23 @@ api_dyson_host: "10.0.0.17"
 # shared rather than duplicated. Only the compass geometry and the house
 # photo itself are api-role-only.
 #
-# TODO: put your actual house photo (the Google Maps screenshot) at
-# roles/api/files/house.jpg before running --limit api -- the `copy` task
-# in roles/api/tasks/app.yml fails the run until that file exists.
-# (A relative `src:` on a role's copy task resolves against that role's
-# own files/ directory -- this path is written relative to the ansible
-# repo root for clarity, but physically it's the same file either way.)
-# north_offset/center/radius below assume a north-up screenshot with the
-# house centred; nudge them once you've seen the panel render against the
-# real photo (compass.svg renders standalone, no Grafana needed, to
-# iterate on these -- see sensors-apps/astronomy/README.md).
-api_house_image_local_path: "roles/api/files/house.jpg"
+# House photo: roles/api/files/MiCasa.jpg (confirmed north-up) -- resized
+# from the original 2600x1600/7.5MB PNG to 1600x984 and converted to JPEG
+# (quality 85) so compass.svg's embedded data: URI stays a reasonable
+# size for a panel that refreshes every minute; the untouched original is
+# kept alongside it as MiCasa-original.png. Geometry below tuned by
+# actually rendering compass.svg against this exact photo (both a
+# same-day view and a December-solstice "not today" view) and eyeballing
+# it in a browser -- the ring sits centred on the house without
+# overrunning into the neighbouring lot at #130. Re-tune the same way
+# (render standalone, no Grafana needed -- see
+# sensors-apps/astronomy/README.md) if the photo is ever replaced.
+api_house_image_local_path: "roles/api/files/MiCasa.jpg"
 api_house_image_remote_path: "/etc/sensors-api/house.jpg"
 api_compass_north_offset_deg: "0"
-api_compass_center_x_pct: "0.5"
-api_compass_center_y_pct: "0.5"
-api_compass_radius_pct: "0.42"
+api_compass_center_x_pct: "0.48"
+api_compass_center_y_pct: "0.475"
+api_compass_radius_pct: "0.30"
 
 ufw_extra_ports:
   - port: 80

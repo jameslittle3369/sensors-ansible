@@ -28,14 +28,9 @@ postgres_host: "10.0.0.11"
 # group_vars/app/vars.yml for the same reason (nothing else changes about
 # it -- still referenced the same way by the five existing apps).
 #
-# TODO: your house's actual latitude/longitude (decimal degrees) and
-# elevation in meters -- these three are placeholders. Get them from the
-# same Google Maps view you screenshotted for the compass image (right-
-# click the house -> the lat,long shown is copyable; elevation from
-# Google's "Elevation" layer or https://www.google.com/maps/@,,,3a,75y
-# -- a rough figure is fine, it only nudges rise/set time by seconds).
+# elevation_m converted from the given 1400 ft (1400 * 0.3048 = 426.72).
 sensors_timezone: America/Chicago
-astronomy_latitude: "0.0"
-astronomy_longitude: "0.0"
-astronomy_elevation_m: "0"
+astronomy_latitude: "29.57135230117934"
+astronomy_longitude: "-98.85194918185309"
+astronomy_elevation_m: "426.72"
 astronomy_site_name: home
