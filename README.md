@@ -40,8 +40,9 @@ ansible-vault create inventory/group_vars/app/vault.yml
 #   vault_tradfri_psk
 #   vault_kasa_username / vault_kasa_password (only if your Kasa devices need cloud auth)
 #   vault_honeywell_username / vault_honeywell_password
-#   vault_smtp_user / vault_smtp_password (shared Gmail app password for all five
+#   vault_smtp_user / vault_smtp_password (shared Gmail app password for all seven
 #     apps' manual/cron --sendemail reports; unrelated to --push-api)
+#   vault_ipgeolocation_api_key (free tier at https://ipgeolocation.io)
 ```
 
 `inventory/hosts.yml` has `rpi4-db` (`10.0.0.11`) and `rpi4-api`
@@ -59,10 +60,22 @@ runs are always available manually or via your own cron job; only the
 `vault_smtp_user`/`vault_smtp_password` doesn't block the scheduled runs
 -- it only blocks the email report path until you fill it in.
 
-**Before the first `--limit api` run**, the Alembic baseline must already
-be stamped against rpi4-db's real `api` database -- this is a one-time
-manual step, not part of the playbook (see `sensors-backend-fastapi`'s
-README): `DATABASE_URL=<real url> SECRET_KEY=<real key> uv run alembic stamp head`.
+**Before running `--limit app` or `--limit api`**, fill in
+`astronomy_latitude`/`astronomy_longitude`/`astronomy_elevation_m` in
+`inventory/group_vars/all/vars.yml` -- both roles need the house's real
+coordinates (the `app` role for the astronomy logger, the `api` role for
+the almanac endpoints and the compass panel). They default to `0.0`,
+which silently produces nonsense sunrise/sunset times rather than
+failing the run, so this is easy to miss.
+
+**Before the first `--limit api` run**, two things beyond the usual
+`TODO`s: the Alembic baseline must already be stamped against rpi4-db's
+real `api` database -- this is a one-time manual step, not part of the
+playbook (see `sensors-backend-fastapi`'s README):
+`DATABASE_URL=<real url> SECRET_KEY=<real key> uv run alembic stamp head`.
+And `roles/api/files/house.jpg` must exist -- put your actual house photo
+there (see that directory's own README) -- the "Deploy the house photo"
+task fails the run with a clear error otherwise.
 
 ## Running
 
@@ -154,18 +167,22 @@ ansible-playbook site.yml --ask-vault-pass
     ansible-managed going forward (enabled+started) without risking an
     apt-triggered reinstall disturbing what's there. No dashboard
     import/provisioning in this pass.
-  - **Five timer-based apps** (`emporia`, `kasa`, `ikea`, `ring`, `honeywell`, driven by
-    the `sensor_apps` list in `vars.yml`): `git clone`/pulls each repo into
+  - **Seven timer-based apps** (`emporia`, `kasa`, `ikea`, `ring`,
+    `honeywell`, `balboa-spa`, `astronomy`, driven by the `sensor_apps`
+    list in `vars.yml`): `git clone`/pulls each repo into
     `/srv/sensors-app/<name>`, creates a `uv venv` + `uv pip install -r
     requirements.txt` (none of these repos have a `pyproject.toml`, so
     `uv sync` doesn't apply), templates that app's `.env`, and deploys a
     systemd **timer + oneshot service** pair
     (`sensors-app-<name>.timer`/`.service`) running
-    `<entrypoint> --push-api` on its own schedule (`item.interval` --
-    2-15 min depending on the app's API cost). Each `--push-api` mode
-    POSTs current readings to `sensors-backend-fastapi` and skips the
-    report/chart/email output those scripts also support for manual/cron
-    use.
+    `<entrypoint> --push-api` on its own schedule. Every app except
+    `astronomy` runs on a monotonic `item.interval` (2-15 min depending
+    on the app's API cost, via `OnUnitActiveSec`); `astronomy` only needs
+    once a day, so it sets `item.on_calendar` instead (`app.timer.j2`
+    branches on which key is present) for a fixed time of day rather than
+    a drifting interval. Each `--push-api` mode POSTs current readings to
+    `sensors-backend-fastapi` and skips the report/chart/email output
+    those scripts also support for manual/cron use.
   - **rtl_433**: built from source (`cmake`, not an apt package, to track
     latest per this project's convention) into `/usr/local`. The role
     prints the Acurite protocol IDs for the built binary directly in the

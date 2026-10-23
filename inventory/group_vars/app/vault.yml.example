@@ -34,3 +34,8 @@ vault_smtp_password: "CHANGE_ME"
 # envisalink_2_postgres.py only listens for status broadcasts; it never
 # arms, disarms, or bypasses anything, so no DSC code is needed at all.
 vault_envisalink_password: "CHANGE_ME"
+
+# api.ipgeolocation.io account key for astronomy.py (free tier -- 1,000
+# credits/day, no credit card needed). Get it from your dashboard at
+# https://ipgeolocation.io after signing up.
+vault_ipgeolocation_api_key: "CHANGE_ME"

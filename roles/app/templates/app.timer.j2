@@ -4,8 +4,12 @@
 Description=Timer for sensors-app: {{ item.name }}
 
 [Timer]
+{% if item.on_calendar is defined %}
+OnCalendar={{ item.on_calendar }}
+{% else %}
 OnBootSec=2min
 OnUnitActiveSec={{ item.interval }}
+{% endif %}
 Persistent=true
 
 [Install]

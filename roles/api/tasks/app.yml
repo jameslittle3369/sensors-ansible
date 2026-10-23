@@ -53,6 +53,19 @@
     mode: '0640'
   notify: restart sensors-api
 
+# The house photo for the almanac compass panel -- not templated (it's a
+# binary image, not config), just copied from the control node. See the
+# TODO above api_house_image_local_path in group_vars/api/vars.yml if
+# this fails because the file doesn't exist yet.
+- name: Deploy the house photo for the almanac compass panel
+  ansible.builtin.copy:
+    src: "{{ api_house_image_local_path }}"
+    dest: "{{ api_house_image_remote_path }}"
+    owner: root
+    group: "{{ api_app_group }}"
+    mode: '0640'
+  notify: restart sensors-api
+
 - name: Apply database migrations (alembic upgrade head)
   ansible.builtin.command: /usr/local/bin/uv run alembic upgrade head
   args:

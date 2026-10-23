@@ -144,6 +144,29 @@ sensor_apps:
       APP_PASSWORD: "{{ vault_smtp_password }}"
       RECEIVER_EMAIL: "{{ sensors_email_to }}"
 
+  - name: astronomy
+    repo: https://github.com/jameslittle3369/LilLittleAstronomy.git
+    entrypoint: astronomy.py
+    # Once a day is plenty -- these values don't change intraday. Unlike
+    # every other app here, `on_calendar` fires at a fixed time of day
+    # instead of drifting on a monotonic interval -- app.timer.j2
+    # branches on whether this key is defined, and `interval` is simply
+    # not read in that branch, so it's omitted here rather than set to
+    # an unused placeholder.
+    on_calendar: "*-*-* 00:10:00"
+    env:
+      IPGEOLOCATION_API_KEY: "{{ vault_ipgeolocation_api_key }}"
+      LATITUDE: "{{ astronomy_latitude }}"
+      LONGITUDE: "{{ astronomy_longitude }}"
+      ELEVATION_M: "{{ astronomy_elevation_m }}"
+      TIMEZONE: "{{ sensors_timezone }}"
+      SITE_NAME: "{{ astronomy_site_name }}"
+      # Only used by manual/cron --sendemail runs -- --push-api ignores these.
+      SMTP_USERNAME: "{{ vault_smtp_user }}"
+      SMTP_PASSWORD: "{{ vault_smtp_password }}"
+      EMAIL_FROM: "{{ vault_smtp_user }}"
+      EMAIL_TO: "{{ sensors_email_to }}"
+
 # TODO: update once the rtl-postgres repo is created and pushed.
 rtl_postgres_repo: https://github.com/jameslittle3369/LilLittleRTL_433.git
 rtl_postgres_env:
@@ -168,7 +191,9 @@ alarm_partition_map:
 
 # TODO: your Pi's actual local timezone, TRADFRI gateway IP, Kasa LAN
 # broadcast address, and spa IP -- filling in generic placeholders for now.
-sensors_timezone: America/Chicago
+# (sensors_timezone itself now lives in group_vars/all/vars.yml -- the api
+# role needs it too, for the almanac endpoints -- but every reference
+# below still just reads {{ sensors_timezone }} unchanged.)
 ikea_gateway_host: "10.0.0.15"
 kasa_discovery_target: "10.0.0.255"
 # Use a router DHCP reservation, not a bare lease -- a moved IP silently

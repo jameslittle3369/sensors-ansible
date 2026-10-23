@@ -10,6 +10,29 @@ api_uvicorn_port: 8000
 api_owserver_url: "http://10.0.0.188/details.xml"
 api_dyson_host: "10.0.0.17"
 
+# Almanac / house-compass panel. astronomy_latitude/longitude/elevation_m/
+# site_name and sensors_timezone live in group_vars/all/vars.yml -- the
+# astronomy app (group_vars/app) needs the exact same values, so they're
+# shared rather than duplicated. Only the compass geometry and the house
+# photo itself are api-role-only.
+#
+# TODO: put your actual house photo (the Google Maps screenshot) at
+# roles/api/files/house.jpg before running --limit api -- the `copy` task
+# in roles/api/tasks/app.yml fails the run until that file exists.
+# (A relative `src:` on a role's copy task resolves against that role's
+# own files/ directory -- this path is written relative to the ansible
+# repo root for clarity, but physically it's the same file either way.)
+# north_offset/center/radius below assume a north-up screenshot with the
+# house centred; nudge them once you've seen the panel render against the
+# real photo (compass.svg renders standalone, no Grafana needed, to
+# iterate on these -- see sensors-apps/astronomy/README.md).
+api_house_image_local_path: "roles/api/files/house.jpg"
+api_house_image_remote_path: "/etc/sensors-api/house.jpg"
+api_compass_north_offset_deg: "0"
+api_compass_center_x_pct: "0.5"
+api_compass_center_y_pct: "0.5"
+api_compass_radius_pct: "0.42"
+
 ufw_extra_ports:
   - port: 80
     proto: tcp
