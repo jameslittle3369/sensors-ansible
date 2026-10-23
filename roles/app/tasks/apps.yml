@@ -48,10 +48,19 @@
   loop_control:
     label: "{{ item.name }}"
 
+# --upgrade-package certifi: none of the apps pin certifi directly (it
+# only arrives transitively via requests), so a venv provisioned before
+# the 2026-10 emSign CA security advisory can be stuck on the
+# pre-advisory certifi forever -- `uv pip install` without --upgrade
+# never re-resolves an already-installed package. Scoped to just this
+# one package rather than a bare --upgrade, which would also silently
+# re-resolve every app's unpinned transitive deps (e.g. ring-doorbell,
+# python-kasa) on every future playbook run.
 - name: Install each app's dependencies
   ansible.builtin.command: >
     /usr/local/bin/uv pip install
     --python {{ app_base_dir }}/{{ item.name }}/.venv/bin/python
+    --upgrade-package certifi
     -r requirements.txt
   args:
     chdir: "{{ app_base_dir }}/{{ item.name }}"
