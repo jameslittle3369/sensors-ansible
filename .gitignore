@@ -1,0 +1,4 @@
+# --- Vault
+inventory/group_vars/all/vault.yml
+inventory/group_vars/api/vault.yml
+inventory/group_vars/app/vault.yml
