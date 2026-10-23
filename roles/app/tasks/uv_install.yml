@@ -15,6 +15,17 @@
   environment:
     UV_INSTALL_DIR: /usr/local/bin
 
+# The install task above is `creates:`-guarded and only ever runs once --
+# on an already-provisioned host, uv itself never gets updated by this
+# playbook. uv vendors its own TLS root bundle (not the OS/certifi one),
+# so it needed its own fix for the 2026-10 emSign CA security advisory;
+# `uv self update` is a safe no-op when already current, so it's left
+# here unconditionally rather than one-off-patched and removed.
+- name: Update uv to the latest release (idempotent self-update)
+  ansible.builtin.command: /usr/local/bin/uv self update
+  register: uv_self_update
+  changed_when: "'Upgraded uv' in uv_self_update.stdout"
+
 # No separate "uv python install" step here: `uv venv --python {{
 # app_python_version }}` in apps.yml runs as app_user and provisions the
 # pinned Python version into that user's own uv data dir on demand.
