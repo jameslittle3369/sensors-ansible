@@ -145,7 +145,7 @@ sensor_apps:
       RECEIVER_EMAIL: "{{ sensors_email_to }}"
 
   - name: astronomy
-    repo: https://github.com/jameslittle3369/LilLittleAstronomy.git
+    repo: https://github.com/jameslittle3369/lillittle-astronomy.git
     entrypoint: astronomy.py
     # Once a day is plenty -- these values don't change intraday. Unlike
     # every other app here, `on_calendar` fires at a fixed time of day
